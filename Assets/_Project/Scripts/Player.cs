@@ -8,6 +8,10 @@ namespace OctanGames
         [SerializeField] private float _moveSpeed = 7f;
         [SerializeField] private float _rotateSpeed = 10f;
 
+        private Vector3 _moveDirection;
+
+        public bool IsWalking => _moveDirection != Vector3.zero;
+
         private void Update()
         {
             var inputVector = new Vector2();
@@ -29,9 +33,9 @@ namespace OctanGames
                 inputVector.x += 1;
             }
 
-            Vector3 moveDirection = new Vector3(inputVector.x, 0f, inputVector.y).normalized;
-            transform.position += moveDirection * _moveSpeed * Time.deltaTime;
-            transform.forward = Vector3.Slerp(transform.forward, moveDirection, Time.deltaTime * _rotateSpeed);
+            _moveDirection = new Vector3(inputVector.x, 0f, inputVector.y).normalized;
+            transform.position += _moveDirection * _moveSpeed * Time.deltaTime;
+            transform.forward = Vector3.Slerp(transform.forward, _moveDirection, Time.deltaTime * _rotateSpeed);
         }
     }
 }
