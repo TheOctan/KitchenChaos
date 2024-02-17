@@ -7,15 +7,18 @@ namespace OctanGames
     {
         private const float PLAYER_RADIUS = 0.7f;
         private const float PLAYER_HEIGHT = 2f;
+        private const float INTERACT_DISTANCE = 2f;
 
         [Header("Parameters")]
         [SerializeField] private float _moveSpeed = 7f;
         [SerializeField] private float _rotateSpeed = 10f;
+        [SerializeField] private LayerMask _countersLayerMask;
 
         [Header("References")]
         [SerializeField] private GameInput _gameInput;
 
         private Vector3 _moveDirection;
+        private Vector3 _lastInteractDirection;
 
         public bool IsWalking => _moveDirection != Vector3.zero;
 
@@ -24,6 +27,27 @@ namespace OctanGames
             Vector2 inputVector = _gameInput.GetMovementVectorNormalized();
             _moveDirection = new Vector3(inputVector.x, 0f, inputVector.y);
 
+            HandleMovement();
+            HandleInteractions();
+        }
+
+        private void HandleInteractions()
+        {
+            if (_moveDirection != Vector3.zero)
+            {
+                _lastInteractDirection = _moveDirection;
+            }
+
+            if (Physics.Raycast(transform.position, _lastInteractDirection, out RaycastHit raycastHit,
+                    INTERACT_DISTANCE, _countersLayerMask)
+                && raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+            {
+                clearCounter.Interact();
+            }
+        }
+
+        private void HandleMovement()
+        {
             bool canMove = CanMove(_moveDirection);
 
             if (!canMove)
@@ -51,6 +75,7 @@ namespace OctanGames
             {
                 transform.position += _moveDirection * _moveSpeed * Time.deltaTime;
             }
+
             transform.forward = Vector3.Slerp(transform.forward, _moveDirection, Time.deltaTime * _rotateSpeed);
         }
 
