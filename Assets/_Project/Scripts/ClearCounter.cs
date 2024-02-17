@@ -6,7 +6,7 @@ namespace OctanGames
     {
         public void Interact()
         {
-            
+            Debug.Log($"Interact with {gameObject.name}");
         }
     }
 }

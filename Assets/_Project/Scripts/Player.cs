@@ -22,27 +22,42 @@ namespace OctanGames
 
         public bool IsWalking => _moveDirection != Vector3.zero;
 
+        private void Start()
+        {
+            _gameInput.InteractionPressed += OnInteractionPressed;
+        }
+
         private void Update()
         {
             Vector2 inputVector = _gameInput.GetMovementVectorNormalized();
             _moveDirection = new Vector3(inputVector.x, 0f, inputVector.y);
 
             HandleMovement();
+            //HandleInteractions();
+        }
+
+        private void OnInteractionPressed()
+        {
             HandleInteractions();
         }
 
         private void HandleInteractions()
         {
+            Vector2 inputVector = _gameInput.GetMovementVectorNormalized();
+            _moveDirection = new Vector3(inputVector.x, 0f, inputVector.y);
+
             if (_moveDirection != Vector3.zero)
             {
                 _lastInteractDirection = _moveDirection;
             }
 
             if (Physics.Raycast(transform.position, _lastInteractDirection, out RaycastHit raycastHit,
-                    INTERACT_DISTANCE, _countersLayerMask)
-                && raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+                    INTERACT_DISTANCE, _countersLayerMask.value))
             {
-                clearCounter.Interact();
+                if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+                {
+                    clearCounter.Interact();
+                }
             }
         }
 
