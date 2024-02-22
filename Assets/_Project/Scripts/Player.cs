@@ -9,6 +9,8 @@ namespace OctanGames
         private const float PLAYER_HEIGHT = 2f;
         private const float INTERACT_DISTANCE = 2f;
 
+        public event Action<ClearCounter> SelectedCounterChanged;
+
         [Header("Parameters")]
         [SerializeField] private float _moveSpeed = 7f;
         [SerializeField] private float _rotateSpeed = 10f;
@@ -19,8 +21,28 @@ namespace OctanGames
 
         private Vector3 _moveDirection;
         private Vector3 _lastInteractDirection;
+        private ClearCounter _selectedCounter;
 
+        public static Player Instance { get; private set; }
         public bool IsWalking => _moveDirection != Vector3.zero;
+        private ClearCounter SelectedCounter
+        {
+            get => _selectedCounter;
+            set
+            {
+                _selectedCounter = value;
+                SelectedCounterChanged?.Invoke(_selectedCounter);
+            }
+        }
+
+        private void Awake()
+        {
+            if (Instance != null)
+            {
+                Debug.LogError("There is more than one Player instance");
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -33,12 +55,20 @@ namespace OctanGames
             _moveDirection = new Vector3(inputVector.x, 0f, inputVector.y);
 
             HandleMovement();
-            //HandleInteractions();
+            HandleInteractions();
+        }
+
+        private void OnDestroy()
+        {
+            _gameInput.InteractionPressed -= OnInteractionPressed;
         }
 
         private void OnInteractionPressed()
         {
-            HandleInteractions();
+            if (_selectedCounter != null)
+            {
+                _selectedCounter.Interact();
+            }
         }
 
         private void HandleInteractions()
@@ -52,12 +82,17 @@ namespace OctanGames
             }
 
             if (Physics.Raycast(transform.position, _lastInteractDirection, out RaycastHit raycastHit,
-                    INTERACT_DISTANCE, _countersLayerMask.value))
+                    INTERACT_DISTANCE, _countersLayerMask.value)
+                && raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
             {
-                if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+                if (clearCounter != null && clearCounter != SelectedCounter)
                 {
-                    clearCounter.Interact();
+                    SelectedCounter = clearCounter;
                 }
+            }
+            else
+            {
+                SelectedCounter = null;
             }
         }
 
@@ -88,10 +123,13 @@ namespace OctanGames
 
             if (canMove)
             {
-                transform.position += _moveDirection * _moveSpeed * Time.deltaTime;
+                transform.position += _moveSpeed * Time.deltaTime * _moveDirection;
             }
 
-            transform.forward = Vector3.Slerp(transform.forward, _moveDirection, Time.deltaTime * _rotateSpeed);
+            if (_moveDirection != Vector3.zero)
+            {
+                transform.forward = Vector3.Slerp(transform.forward, _moveDirection, Time.deltaTime * _rotateSpeed);
+            }
         }
 
         private bool CanMove(Vector3 moveDirection)
